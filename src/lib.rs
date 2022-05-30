@@ -1,3 +1,5 @@
+mod span;
+
 #[cfg(test)]
 mod tests {
     #[test]
