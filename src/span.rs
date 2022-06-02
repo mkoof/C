@@ -25,6 +25,17 @@ impl Pos {
     pub fn zero() -> Pos {
         Pos { line: 0, col: 0 }
     }
+
+    pub fn eof() -> Pos {
+        Pos {
+            line: usize::max_value(),
+            col: usize::max_value(),
+        }
+    }
+
+    pub fn is_eof(&self) -> bool {
+        self.line == usize::max_value()
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -39,9 +50,15 @@ impl Span {
     }
 
     pub fn merge(&self, other: &Span) -> Span {
-        Span {
-            start: self.start,
-            end: other.end,
+        if self.is_eof() {
+            *other
+        } else if other.is_eof() {
+            *self
+        } else {
+            Span {
+                start: self.start,
+                end: other.end,
+            }
         }
     }
 
@@ -50,6 +67,21 @@ impl Span {
             start: Pos::zero(),
             end: Pos::zero(),
         }
+    }
+
+    pub fn eof() -> Span {
+        Span {
+            start: Pos::eof(),
+            end: Pos::eof(),
+        }
+    }
+
+    pub fn empty() -> Span {
+        Span::eof()
+    }
+
+    pub fn is_eof(&self) -> bool {
+        self.start == Pos::eof()
     }
 }
 

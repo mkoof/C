@@ -1,5 +1,6 @@
 mod span;
 mod token;
+mod node;
 
 pub fn lex(code: String) -> token::Tokens {
     let cs = token::CharSeq::new(code);

@@ -61,6 +61,7 @@ impl Tokens {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Cursor<'a> {
     tokens: &'a Tokens,
     pos: usize,
@@ -82,6 +83,14 @@ impl<'a> Cursor<'a> {
 
     pub fn get(&self, i: usize) -> Option<&Token> {
         self.tokens.get(self.pos + i)
+    }
+
+    pub fn span(&self) -> Span {
+        if let Some(token) = self.peek() {
+            token.span
+        } else {
+            Span::eof()
+        }
     }
 }
 
