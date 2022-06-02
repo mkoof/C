@@ -1,6 +1,6 @@
 const TAB_SIZE: usize = 4;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Pos {
     pub line: usize,
     pub col: usize,
@@ -38,7 +38,7 @@ impl Pos {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Span {
     pub start: Pos,
     pub end: Pos,

@@ -7,6 +7,7 @@ use std::marker::PhantomData;
 
 use crate::span::Span;
 use crate::token::{Cursor, Token, TokenKind};
+use c_macros::*;
 use parse::Parse;
 use semantic_analyze::SemanticAnalyze;
 
@@ -97,6 +98,21 @@ macro_rules! define_puncts {
 define_keyword!(Int, "int");
 define_puncts!(Eq, "==");
 
+#[derive(Parse)]
+pub struct A {
+    a: Int,
+    b: Eq,
+    c: (Int, Eq),
+    d: Split<Int, Eq>,
+}
+
+#[derive(Parse)]
+pub enum B {
+    A(Int),
+    B(Eq),
+    C(Int, Eq),
+}
+
 #[cfg(test)]
 mod tests {
     pub use super::*;
@@ -109,5 +125,7 @@ mod tests {
         assert!(Int::parse(&mut cursor).is_ok());
         assert!(Int::parse(&mut cursor).is_err());
         assert!(Eq::parse(&mut cursor).is_ok());
+        cursor = tokens.cursor();
+        assert!(<Int as Parse>::parse(&mut cursor).is_ok());
     }
 }
