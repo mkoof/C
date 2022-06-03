@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{format_ident, quote};
-use syn::{parse_macro_input, DataEnum, DataStruct, DeriveInput, Ident, Type, Data};
+use syn::{parse_macro_input, Data, DataEnum, DataStruct, DeriveInput, Ident, Type};
 
 struct StructItem {
     ident: Ident,
@@ -21,6 +21,7 @@ fn get_struct_items(data: &DataStruct) -> Vec<StructItem> {
             ty: field.ty.clone(),
         });
     }
+    items.pop();
     items
 }
 
@@ -59,7 +60,8 @@ pub fn derive_parse(input: TokenStream) -> TokenStream {
                 let ident = &item.ident;
                 let ty = &item.ty;
                 quote! {
-                    let #ident = #ty::parse(cursor)?;
+                    let #ident = <#ty as Parse>::parse(cursor)?;
+                    span = span.merge(&#ident.span());
                 }
             });
             let idents = items.iter().map(|item| {
@@ -69,10 +71,12 @@ pub fn derive_parse(input: TokenStream) -> TokenStream {
                 }
             });
             quote! (
+                let mut span = Span::empty();
                 #(#assigns)*
-                Self {
-                    #(#idents),*
-                }
+                Ok(Self {
+                    #(#idents,)*
+                    span,
+                })
             )
         }
         Data::Enum(data) => {
@@ -82,19 +86,18 @@ pub fn derive_parse(input: TokenStream) -> TokenStream {
                 let tys = &item.tys;
                 let placeholders = spawn_placeholders(tys.len());
                 quote!(
-                    loop {
+                    {
                         let mut c = cursor.clone();
-                        #(
-                            let #placeholders = <#tys as Parse>::parse(&mut c);
-                            if let Err(s) = #placeholders {
+                        match <(#(#tys),*) as Parse>::parse(&mut c) {
+                            Ok((#(#placeholders),*)) => {
+                                return Ok(#name::#ident(#(#placeholders),*));
+                            }
+                            Err(s) => {
                                 if span.cmp(&s) == std::cmp::Ordering::Less {
                                     span = s;
                                 }
-                                break;
                             }
-                        )*
-                        *cursor = c;
-                        return Ok(#name::#ident(#(#placeholders?),*));
+                        }
                     }
                 )
             });
@@ -120,29 +123,21 @@ pub fn derive_parse(input: TokenStream) -> TokenStream {
     .into()
 }
 
-// #[proc_macro_derive(SemanticAnalyze, attributes(scope, reverse))]
-// pub fn derive_semantic(input: TokenStream) -> TokenStream {
-//     let input = parse_macro_input!(input as DeriveInput);
-//     todo!()
-// }
-
-#[proc_macro_derive(Node)]
-pub fn derive_node(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(SemanticAnalyze)]
+pub fn derive_semantic(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = input.ident;
     let extends = match &input.data {
         Data::Struct(data) => {
             let items = get_struct_items(data);
-            let merge_idents = items.iter().map(|item| {
+            let idents = items.iter().map(|item| {
                 let ident = &item.ident;
                 quote! {
-                    span = span.merge(&self.#ident.span());
+                    #ident
                 }
             });
             quote!(
-                let mut span = Span::empty();
-                #(#merge_idents)*
-                span
+                #(self.#idents.semantic_analyze();)*;
             )
         }
         Data::Enum(data) => {
@@ -153,7 +148,53 @@ pub fn derive_node(input: TokenStream) -> TokenStream {
                 let placeholders = spawn_placeholders(tys.len());
                 quote!(
                     #name::#ident(#(#placeholders),*) => {
-                        #(span = span.merge(#placeholders.span());)*
+                        #(#placeholders.semantic_analyze();)*
+                    }
+                )
+            });
+            quote!(
+                let mut span = Span::empty();
+                match self {
+                    #(#match_arms)*
+                }
+            )
+        }
+        _ => {
+            return syn::Error::new(name.span(), "Only support struct or enum now")
+                .to_compile_error()
+                .into();
+        }
+    };
+    quote! (
+        impl SemanticAnalyze for #name {
+            fn semantic_analyze(&self) -> Result<(), Span> {
+                #extends
+                Ok(())
+            }
+        }
+    )
+    .into()
+}
+
+#[proc_macro_derive(Node)]
+pub fn derive_node(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let name = input.ident;
+    let extends = match &input.data {
+        Data::Struct(_) => {
+            quote!(
+                self.span
+            )
+        }
+        Data::Enum(data) => {
+            let items = get_enum_items(data);
+            let match_arms = items.iter().map(|item| {
+                let ident = &item.ident;
+                let tys = &item.tys;
+                let placeholders = spawn_placeholders(tys.len());
+                quote!(
+                    #name::#ident(#(#placeholders),*) => {
+                        #(span = span.merge(&#placeholders.span());)*
                         span
                     }
                 )
@@ -177,5 +218,6 @@ pub fn derive_node(input: TokenStream) -> TokenStream {
                 #extends
             }
         }
-    ).into()
+    )
+    .into()
 }
