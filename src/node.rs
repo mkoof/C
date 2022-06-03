@@ -103,7 +103,7 @@ pub struct A {
     a: Int,
     b: Eq,
     c: (Int, Eq),
-    d: Split<Int, Eq>,
+    // d: Split<Int, Eq>,
 }
 
 #[derive(Parse)]
