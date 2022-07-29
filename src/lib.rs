@@ -2,13 +2,13 @@ mod ast;
 mod err;
 mod prog;
 mod runner;
-mod token;
+mod seq;
 
 use ast::{Parse, AST};
 use err::{CompileError, RuntimeError};
 use prog::{BinProgram, Program};
 use runner::Runner;
-use token::Code;
+use seq::Code;
 
 const DEBUG: bool = true;
 
@@ -16,7 +16,8 @@ pub fn compile(code: &str) -> Result<BinProgram, CompileError> {
     fn _compile(code: &str) -> Result<BinProgram, CompileError> {
         let code = Code::new(code);
         let seq = code.lex()?;
-        let ast = AST::parse(&seq)?;
+        let mut cursor = seq.cursor();
+        let ast = AST::parse(&mut cursor)?;
         let prog = Program::new(&ast)?;
         Ok(prog.to_bin())
     }
