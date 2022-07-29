@@ -1,4 +1,7 @@
 #![allow(unused)]
+
+use crate::err::CompileError;
+
 pub struct Sequence;
 
 impl Sequence {
@@ -14,7 +17,7 @@ impl Code {
         todo!()
     }
 
-    pub fn lex(&self) -> Sequence {
+    pub fn lex(&self) -> Result<Sequence, CompileError> {
         todo!()
     }
 

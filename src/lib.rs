@@ -1,28 +1,31 @@
 mod ast;
+mod err;
 mod prog;
 mod runner;
 mod token;
 
 use ast::{Parse, AST};
+use err::{CompileError, RuntimeError};
 use prog::{BinProgram, Program};
 use runner::Runner;
 use token::Code;
 
-pub fn compile(code: &str) -> BinProgram {
+pub fn compile(code: &str) -> Result<BinProgram, CompileError> {
     let code = Code::new(code);
-    let seq = code.lex();
-    let ast = AST::parse(&seq);
-    let prog = Program::new(&ast);
-    prog.to_bin()
+    let seq = code.lex()?;
+    let ast = AST::parse(&seq)?;
+    let prog = Program::new(&ast)?;
+    Ok(prog.to_bin())
 }
 
-pub fn run(prog: &BinProgram) {
+pub fn run(prog: &BinProgram) -> Result<(), RuntimeError> {
     let mut runner = Runner::new();
-    runner.load(&prog);
-    runner.run();
+    runner.load(&prog)?;
+    runner.run()
 }
 
-pub fn load_prog(path: &str) -> BinProgram {
+/// return None when load error
+pub fn load_prog(path: &str) -> Option<BinProgram> {
     BinProgram::load(path)
 }
 

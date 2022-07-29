@@ -1,11 +1,11 @@
 #![allow(unused)]
 
 use crate::ast::*;
-
+use crate::err::CompileError;
 pub struct Program;
 
 impl Program {
-    pub fn new(ast: &AST) -> Program {
+    pub fn new(ast: &AST) -> Result<Program, CompileError> {
         todo!();
     }
 
@@ -33,7 +33,8 @@ impl BinProgram {
         unimplemented!()
     }
 
-    pub fn load(path: &str) -> BinProgram {
+    /// return None when path not exist
+    pub fn load(path: &str) -> Option<BinProgram> {
         unimplemented!()
     }
 }

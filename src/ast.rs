@@ -1,15 +1,16 @@
 #![allow(unused)]
 
+use crate::err::CompileError;
 use crate::token::Sequence;
 
-pub trait Parse {
-    fn parse(seq: &Sequence) -> Self;
+pub trait Parse: Sized {
+    fn parse(seq: &Sequence) -> Result<Self, CompileError>;
 }
 
 pub struct AST;
 
 impl Parse for AST {
-    fn parse(seq: &Sequence) -> Self {
+    fn parse(seq: &Sequence) -> Result<Self, CompileError> {
         todo!()
     }
 }
